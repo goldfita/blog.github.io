@@ -1,0 +1,1093 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>Todd &#8211; Pushing Back</title>
+	<atom:link href="/archives/author/todd/feed" rel="self" type="application/rss+xml" />
+	<link>/</link>
+	<description></description>
+	<lastBuildDate>Wed, 24 May 2023 23:22:06 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.3.1</generator>
+	<item>
+		<title>Ansible Verbosity and Tags</title>
+		<link>/archives/391</link>
+					<comments>/archives/391#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Wed, 10 May 2023 16:02:14 +0000</pubDate>
+				<category><![CDATA[Completely Irrelevant]]></category>
+		<guid isPermaLink="false">/?p=391</guid>
+
+					<description><![CDATA[A question that sometimes comes up on the forums about Ansible is how to cut down on its verbose output, especially how to suppress output for skipped tasks. One solution to this problem is to use tags instead of when. Tags allow you to bypass a task completely, as if it weren&#8217;t even in the &#8230;<p class="read-more"> <a class="" href="/archives/391"> <span class="screen-reader-text">Ansible Verbosity and Tags</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<p>A question that sometimes comes up on the forums about Ansible is how to cut down on its verbose output, especially how to suppress output for skipped tasks. One solution to this problem is to use <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">tags </mark>instead of <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">when</mark>. Tags allow you to bypass a task completely, as if it weren&#8217;t even in the file. However, there are some caveats. The following snippet demonstrates how this works.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">- set_fact:
+    skip2: false
+
+- tags: '{{"always" if skip is undefined else "never"}}'
+  debug:
+    msg: 'Tag skip not skipped ({{skip is undefined}})'
+
+- tags: '{{"always" if skip2 is undefined else "never"}}'
+  debug:
+    msg: 'Tag skip2 not skipped ({{skip2 is undefined}})'
+
+- when: skip is undefined
+  debug:
+    msg: 'When skip not skipped ({{skip is undefined}})'
+
+- when: skip2 is undefined
+  debug:
+    msg: 'When skip2 not skipped ({{skip2 is undefined}})'</mark></code></pre>
+
+
+
+<p>If you run this, defining skip at the command line, you see that both the whens are skipped as expected, but they still appear in the output. By contrast, the first skip does not appear at all, which is what we want. Notice, though, that even though skip2 is defined, the second tags debug runs. The tags are evaluated before the file is run, so you need to take this into account when deciding whether you want to use tags to skip a task.</p>
+
+
+
+<pre class="wp-block-code scroll"><code>> <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">ansible-playbook skip.yml -e "skip="</mark>
+
+TASK &#91;set_fact] ********************************************************************************************************************************************************************
+ok: &#91;localhost]
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+ok: &#91;localhost] => {
+    "msg": "Tag skip2 not skipped (False)"
+}
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+<mark style="background-color:rgba(0, 0, 0, 0);color:#f20000" class="has-inline-color"><mark style="background-color:rgba(0, 0, 0, 0);color:#fb0404" class="has-inline-color">skipping</mark></mark>: &#91;localhost]
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+<mark style="background-color:rgba(0, 0, 0, 0);color:#f20000" class="has-inline-color"><mark style="background-color:rgba(0, 0, 0, 0);color:#fb0404" class="has-inline-color">skipping</mark></mark>: &#91;localhost]</code></pre>
+
+
+
+<p>If you run this without defining skip, you get the output below, which does run the first tags. So it&#8217;s clear that you can use tags to get a similar behavior to when but without the undesirable verbosity. There is one more caveat. It appears that you can only use the fact that a variable is bound or not. If you try to use the value of the variable to control the tags, it won&#8217;t work.</p>
+
+
+
+<pre class="wp-block-code scroll"><code>> <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">ansible-playbook skip.yml</mark>
+
+TASK &#91;set_fact] ********************************************************************************************************************************************************************
+ok: &#91;localhost]
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+ok: &#91;localhost] => {
+    "msg": "Tag skip not skipped (True)"
+}
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+ok: &#91;localhost] => {
+    "msg": "Tag skip2 not skipped (False)"
+}
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+ok: &#91;localhost] => {
+    "msg": "When skip not skipped (True)"
+}
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+<mark style="background-color:rgba(0, 0, 0, 0);color:#f20000" class="has-inline-color"><mark style="background-color:rgba(0, 0, 0, 0);color:#fb0404" class="has-inline-color">skipping</mark></mark>: &#91;localhost]</code></pre>
+
+
+
+<p>In some situations, the fact that tags are evaluated before the file runs may be desirable behavior. In the example below, I&#8217;m including a file recursively twice. The first time through, the include is run because first has not yet be defined when the tags are evaluated. The second time through, it skips the include because first was defined before the second recursive call. If you tried to do this in the exact same way using when, it wouldn&#8217;t work since first would be defined by the time the when is evaluated. In this case, you could probably come up with a slightly different way to make this work with when, but the point is that you can achieve different behavior by using tags instead.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">- debug:
+    msg: 'First attempt ({{first is undefined}})'
+
+- vars:
+    first: false
+  tags: '{{"always" if first is undefined else "never"}}'
+  include_tasks: try_something.yml</mark></code></pre>
+
+
+
+<pre class="wp-block-code scroll"><code>TASK &#91;include_tasks] ***************************************************************************************************************************************************************
+included: /home/user/try_something.yml for localhost
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+ok: &#91;localhost] => {
+    "msg": "<mark style="background-color:rgba(0, 0, 0, 0);color:#fb0404" class="has-inline-color">First attempt (True)</mark>"
+}
+
+TASK &#91;include_tasks] ***************************************************************************************************************************************************************
+included: /home/user/try_something.yml for localhost
+
+TASK &#91;debug] ***********************************************************************************************************************************************************************
+ok: &#91;localhost] => {
+    "msg": "<mark style="background-color:rgba(0, 0, 0, 0);color:#fb0404" class="has-inline-color">First attempt (False)</mark>"
+}</code></pre>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/391/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>WSL Setup Tips</title>
+		<link>/archives/363</link>
+					<comments>/archives/363#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Wed, 26 Apr 2023 21:04:40 +0000</pubDate>
+				<category><![CDATA[Completely Irrelevant]]></category>
+		<guid isPermaLink="false">/?p=363</guid>
+
+					<description><![CDATA[Ubuntu When scripting VM or container images, it&#8217;s easy to inadvertently rm -rf /, so it&#8217;s desirable to mount host drives read only. It&#8217;s also nice to have a static IP for accessing your machine. The default WSL2 configuration uses a dynamic IP. It was actually relatively easy, but it did take me a day &#8230;<p class="read-more"> <a class="" href="/archives/363"> <span class="screen-reader-text">WSL Setup Tips</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<h2 class="wp-block-heading">Ubuntu</h2>
+
+
+
+<p>When scripting VM or container images, it&#8217;s easy to inadvertently <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">rm -rf /</mark>, so it&#8217;s desirable to mount host drives read only. It&#8217;s also nice to have a static IP for accessing your machine. The default WSL2 configuration uses a dynamic IP. It was actually relatively easy, but it did take me a day or so of work. I&#8217;m using the official distro.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">Distributor ID: Ubuntu
+Description: Ubuntu 22.04.2 LTS
+Release: 22.04
+Codename: jammy</mark></code></pre>
+
+
+
+<p>Create a /etc/<a href="https://learn.microsoft.com/en-us/windows/wsl/wsl-config">wsl.conf</a> that uses /etc/fstab. This will allow us to custom mount drives however we want. The <mark class="has-inline-color has-ast-global-color-0-color">appendWindowsPath </mark>part automatically adds the paths for powershell, ssh, and other standard Windows executables. For this to work, you need to mount drive C. To set a static IP, set <mark class="has-inline-color has-ast-global-color-0-color">generateHosts </mark>to false so Windows doesn&#8217;t overwrite the hosts file. I&#8217;ll get to resolv.conf below.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">&#91;automount]
+enabled = true
+root = /mnt
+options = "metadata"
+mountFsTab = true
+
+&#91;network]
+generateResolvConf = false
+generateHosts = false
+hostname = ubuntu
+
+&#91;interop]
+appendWindowsPath = true
+
+&#91;user]
+default = myuser
+
+&#91;boot]
+systemd = true</mark></code></pre>
+
+
+
+<p>Now create /etc/fstab with the directories you want. Because we enabled automount, it will mount C automatically, but it won&#8217;t be read only. The second entry in fstab makes it read only. Note that you can still modify your host machine by running <mark class="has-inline-color has-ast-global-color-0-color">powershell.exe &#8220;command&#8221;</mark>, but it&#8217;s a lot harder to damage by accident.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color"># UNCONFIGURED FSTAB FOR BASE SYSTEM
+C:/mystuff /home/mystuff drvfs defaults,ro 0 0
+C:         /mnt/c        drvfs defaults,ro 0 0</mark></code></pre>
+
+
+
+<p>To use a static IP, we&#8217;ll need a <a href="https://superuser.com/questions/1582234/make-ip-address-of-wsl2-static">virtual network adapter</a>. Do the following as admin. The first command will only work once WSL is up and running. You&#8217;ll have to add a rule to the firewall to <a href="https://gist.github.com/wllmsash/1636b86eed45e4024fb9b7ecd25378ce">allow traffic coming from WSL</a>. Without this you won&#8217;t even be able to ping the gateway. You may need to <a href="https://serverfault.com/questions/838325/sshd-is-already-running-though-keeps-trying-to-start">kill and restart sshd</a>. Initially I removed the dynamic IP windows attached to the adapter. Don&#8217;t do this. See below.</p>
+
+
+
+<pre class="wp-block-code scroll"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">netsh.exe interface ip add address "vEthernet (WSL)" 192.168.2.1 255.255.255.0
+New-NetFirewallRule -Name 'WSL' -DisplayName 'WSL' -InterfaceAlias 'vEthernet (WSL)' -Direction Inbound -Action Allow</mark></code></pre>
+
+
+
+<p>To temporarily set an IP, execute the following.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">ip addr add 192.168.2.5/24 broadcast 192.168.2.255 dev eth0 label eth0:1</mark></code></pre>
+
+
+
+<p>To set it permanently, edit /etc/systemd/network/10-eth0.network and run <mark class="has-inline-color has-ast-global-color-0-color">systemctl enable systemd-networkd</mark>.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">&#91;Match]
+Name=eth0
+
+&#91;Network]
+Address=192.168.2.5/24
+Gateway=192.168.2.1
+DHCP=no</mark></code></pre>
+
+
+
+<p>I ran into an issue at this point with contacting the default nameserver. To fix this, you have to set <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">generateResolvConf</mark> to false and add the following to /etc/systemd/resolved.conf. After reboot, check the result with <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">resolvectl</mark>. Initially I tried this with the resolvconf package. But I had to run <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">resolvconf -u</mark> after each boot to get it to generate resolv.conf.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">&#91;Resolve]
+# Google's public DNS
+DNS=8.8.8.8 8.8.4.4</mark></code></pre>
+
+
+
+<p>You need to link /etc/resolve.conf to systemd&#8217;s version.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf</mark></code></pre>
+
+
+
+<p>Now update /etc/hosts with the new IP.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">192.168.2.5 ubuntu</mark></code></pre>
+
+
+
+<p>Let yourself log in without a password. You can log in with a different user with the <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">-u</mark> flag (e.g. <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">wsl -d ubuntu -u myuser</mark>).</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">echo "myuser ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/myuser</mark></code></pre>
+
+
+
+<p>Unlike VirtualBox virtual hard disks, containers grow automatically. If they get too big, you can shrink them with <a href="https://writeabout.net/2021/10/14/shrink-your-wsl2-virtual-disk-on-windows-home/">diskpart</a>. You will need to <a href="https://askubuntu.com/questions/1380253/where-is-wsl-located-on-my-computer">locate the container image</a>.</p>
+
+
+
+<p>If you see error messages like the following, something went wrong mapping the drives, and there&#8217;s probably other issues as well. It may crash after a short while. Usually this happens if I shutdown from within the container instead of using <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">wsl &#8211;shutdown</mark>. The only thing to do is restart.</p>
+
+
+
+<pre class="wp-block-code scroll"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">&lt;3>WSL (819) ERROR: UtilTranslatePathList:2803: Failed to translate C:\Windows\system32</mark></code></pre>
+
+
+
+<p>If you get error messages about insufficient memory, you can try adding the following to C:\Users\myuser.wslconfig.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">&#91;wsl2]
+memory=4GB
+processors=4</mark></code></pre>
+
+
+
+<h2 class="wp-block-heading">Rocky</h2>
+
+
+
+<p>I&#8217;ve create an ansible script to do this for Rocky Linux 9. Download <a href="https://download.rockylinux.org/pub/rocky/9/images/x86_64/">Rocky-9-container-Base</a>. Place the files below in a directory on the host and follow the steps at the top of the YAML file, making sure to change IPs, user names, paths, etc.</p>
+
+
+
+<p><a href="/wp-content/uploads/2023/05/playbook-wsl.yml">playbook-wsl.yml</a><br><a href="/wp-content/uploads/2023/05/fstab.j2">fstab.j2</a><br><a href="/wp-content/uploads/2023/05/wsl.conf.j2">wsl.conf.j2</a><br><a href="/wp-content/uploads/2023/05/update-ip.sh.j2">update-ip.sh.j2</a></p>
+
+
+
+<h3 class="wp-block-heading">Add WSL Network Adapter</h3>
+
+
+
+<p>The <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">vEthernet (WSL)</mark> adapter does not get created until you start WSL after each reboot. There are a couple of ways to automate this.</p>
+
+
+
+<h6 class="wp-block-heading">Method 1: Startup</h6>
+
+
+
+<p>Put the <a href="/wp-content/uploads/2023/05/create_wsl_network.bat">create_wsl_network.bat</a> file in a convenient place like your user home. Create a shortcut to the batch file in the same directory. Right click the shortcut, select <strong>Properties -&gt; Advanced</strong>, and check <strong>Run as administrator</strong>. Type <strong>windows key + R</strong> and enter <strong>shell:startup</strong>. Create a batch file with a single line that has the full path to the shortcut (e.g. C:\Users\myuser\WSL_Network.lnk). Don&#8217;t ask me why this has to be so complicated. The only problem with doing it this way is that it will ask you for permission to run the batch file every time you log in.</p>
+
+
+
+<h6 class="wp-block-heading">Method 2: Task Scheduler</h6>
+
+
+
+<p>Start the task scheduler and select <strong>Create Task</strong>. Check <strong>Run with highest privileges</strong> on the <strong>General </strong>tab and enter a name for the task at the top. Under the <strong>Triggers </strong>tab, click <strong>New</strong>, and select <strong>At log on</strong> from the drop down at the top. On the <strong>Actions </strong>tab, click <strong>New</strong>, and browse to <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">create_wsl_network.bat</mark>. Save.</p>
+
+
+
+<h3 class="wp-block-heading">Windows Terminal</h3>
+
+
+
+<p>If you&#8217;re using Windows Terminal, you can open a tab directly to a WSL instance.  However, there are a lot of profiles in the dropdown. You can hide a profile by going to <strong>Settings -&gt;  Profiles -&gt; Specific Profile -&gt; Hide profile from dropdown</strong>. If you want to save your terminal settings, you can find the <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">settings.json</mark> in C:\Users\username\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState.</p>
+
+
+
+<p>Your WSL instances are mounted as network drives. To access an instance called <strong>rocky </strong>from Powershell, for example, <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">cd \\wsl.localhost\rocky</mark>.</p>
+
+
+
+<h3 class="wp-block-heading">Hyper-V Service</h3>
+
+
+
+<p>You may also want to set the <strong>Hyper-V Host Compute Service</strong> to start automatically. It isn&#8217;t necessary though since it will start when you start WSL.</p>
+
+
+
+<h3 class="wp-block-heading">Shortcut to WSL2 GUI Application</h3>
+
+
+
+<p>Create a new shortcut, e.g.:</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-0-color">C:\Windows\System32\wsl.exe -d rocky -e bash -ic "nohup ~/run-emacs.sh &amp;"</mark></code></pre>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/363/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>USPS Loses Package</title>
+		<link>/archives/316</link>
+					<comments>/archives/316#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Mon, 20 Feb 2023 17:22:49 +0000</pubDate>
+				<category><![CDATA[Government is Lazy]]></category>
+		<guid isPermaLink="false">/?p=316</guid>
+
+					<description><![CDATA[I ordered some books from Amazon. After a couple weeks I logged in to get a delivery status update, and it said that the package had been delivered several days earlier. The Amazon seller told me the package was delivered. So I opened a lost package inquiry with the post office. After a few days, &#8230;<p class="read-more"> <a class="" href="/archives/316"> <span class="screen-reader-text">USPS Loses Package</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<p>I ordered some books from Amazon. After a couple weeks I logged in to get a delivery status update, and it said that the package had been delivered several days earlier. The Amazon seller told me the package was delivered. So I opened a lost package inquiry with the post office. After a few days, someone from my local branch left me a voicemail to tell me the GPS coordinates indicate that the package was delivered to some town in Texas.</p>
+
+
+
+<p>And that was it. There was no further attempt to recover the package. And they even knew exactly where it was! The post office does not stand behind anything. You basically need to buy insurance for every little thing you ship. Fortunately the Amazon seller gave me a refund even though it wasn&#8217;t his/her fault. I would avoid using the post office for anything important if you have that option.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/316/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Migrating to Fish from Bash</title>
+		<link>/archives/293</link>
+					<comments>/archives/293#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Thu, 19 Jan 2023 19:36:10 +0000</pubDate>
+				<category><![CDATA[Completely Irrelevant]]></category>
+		<guid isPermaLink="false">/?p=293</guid>
+
+					<description><![CDATA[Overview Switching to the Fish shell when you have a bunch of existing Bash scripts can be quite a challenge due incompatibilities with functions and the inability to source scripts from another language. There is at least one plugin which attempts to solve some of these problems, but I have not looked at it. Instead &#8230;<p class="read-more"> <a class="" href="/archives/293"> <span class="screen-reader-text">Migrating to Fish from Bash</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<h2 class="wp-block-heading">Overview</h2>
+
+
+
+<p>Switching to the <a href="https://fishshell.com/">Fish shell</a> when you have a bunch of existing Bash scripts can be quite a challenge due incompatibilities with functions and the inability to source scripts from another language. There is at least one plugin which attempts to solve some of these problems, but I have not looked at it. Instead I used the suggested trick below. However, this alone is not enough. It needs a lot more work to make it usable. This replaces the fish shell with a bash shell that runs your script. When the script is done, it replaces the bash shell with a fish shell, leaving you back in fish.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code>exec bash -c "bash_script.sh; exec fish"</code></pre>
+
+
+
+<p>The major problems are that (1) you can&#8217;t run bash functions in fish, and (2) you can&#8217;t source a bash script into fish, which means any variables set in the bash script will not be available in your fish shell. If you don&#8217;t have existing scripts or you only have a small number of them, and they are easy to change, the solution to these two problems is easy: don&#8217;t use functions and don&#8217;t set variables through sourcing. Since this wasn&#8217;t an option for me, I solved the problem by writing all the bash functions to individual scripts, creating wrappers around the functions, and defining a function to export variables that has the same syntax in both fish and bash. Before I go any further, let me say that I strongly recommend, if you have any other option, against doing it this way for the following reasons.</p>
+
+
+
+<ul>
+<li>Because each script and function now calls <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">exec fish</mark> at the end, you can no longer combine multiple scripts in a single command or in another script. Anything that happens after the first bash script will be lost.</li>
+
+
+
+<li>This took me a few days to get working, and it was extremely difficult to debug due to the extra layer introduced by the wrappers.</li>
+
+
+
+<li>It requires some ugly changes to <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">config.fish</mark>.</li>
+
+
+
+<li>Each time you <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">exec fish</mark>, it runs through the initialization, including <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">config.fish</mark>, which may have some undesirable consequences as I&#8217;ll explain.</li>
+</ul>
+
+
+
+<h2 class="wp-block-heading">Making Fish Feel More Like Bash</h2>
+
+
+
+<p>I first want to get into the various other differences between fish and bash that I&#8217;ve discovered. Then I&#8217;ll get to the wrappers, I promise. Fish doesn&#8217;t use history the same way as bash. If you want to reproduce something like bash history, you can do the following. Because fish is pretty good at figuring out what you want to type, there is somewhat less need for history. The <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">fish_command_not_found</mark> lets you intercept unbound commands. Then you can examine the command to see if it&#8217;s a bash history command (i.e. !nnn), select that number from history, and run it. Otherwise, run the default handler.</p>
+
+
+
+<pre class="wp-block-code scroll has-vivid-cyan-blue-color has-text-color"><code>if status --is-interactive
+    alias !!     'eval_hist "$history&#91;1]"'
+    # I'm not using search because the numbering won't be consistent with !nnn
+    alias histgrep "history --reverse | nl | grep $arvg&#91;1]"
+    alias hist     "history --reverse | nl"
+
+    # Putting an extra character in front stops it from being added to history
+    abbr --add -g !!       ' !!'
+    abbr --add -g histgrep ' histgrep'
+    abbr --add -g hist     ' hist'
+
+    # Roughly equivalent to !nnn in bash.
+    function fish_command_not_found
+        if &#91; (count $argv) = 1 ]; and test ! -z "(string match -r '!&#91;&#91;:digit:]]+' "$argv&#91;1]")"
+            set -l num (string sub -s 2 $argv&#91;1])
+            set -l cmd (history --reverse | nl | grep (printf "^&#91;&#91;:space:]]*%s&#91;&#91;:space:]]*" "$num") | cut -f 2)
+            if test -z (string match -r '!' "$cmd")
+                builtin history delete --exact --case-sensitive "!$num"
+                eval_hist "$cmd"
+            end
+        else
+            __fish_default_command_not_found_handler $argv
+        end
+    end
+
+    # This has nothing to do with history.
+    # It's a nice Emacs way to quit out of completions.
+    bind \cg 'cancel'
+end
+
+set -lx add_hist 'printf \"%s cmd: %s\n  when: %s\n\" \"-\" \"\$last_cmd\" \$(date "+%s") &gt;&gt; ~/.local/share/fish/fish_history'
+
+eval "function eval_hist; set -l last_cmd \"\$argv\"; eval \"\$last_cmd; $add_hist\"; history --merge; end"
+</code></pre>
+
+
+
+<p>If you are using the <a href="https://unix.stackexchange.com/questions/1288/preserve-bash-history-in-multiple-terminal-windows">prompt command trick</a> to preserve history across multiple terminals, you&#8217;ll probably want to do the same in fish. Initially I went with this.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">functions --copy fish_prompt _fish_prompt
+function fish_prompt
+    history merge
+    _fish_prompt
+end</mark></code></pre>
+
+
+
+<p>But pretty soon I realized it was merging history in every terminal after every command immediately. This is really annoying. I don&#8217;t want to enter the up key to get the previous thing I typed and instead get something I typed in another terminal. And the solution, instead, is to do absolutely nothing! Fish already saves each command you type in each terminal to a <a href="https://github.com/fish-shell/fish-shell/issues/862">history file</a>. However, I soon discovered that sometimes it was still merging in history from other terminals. This was due to running <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">exec fish</mark> after a bash command. Running the initialization pulls in the merged history file. This is one of the undesirable consequences I was speaking about.</p>
+
+
+
+<p>One of my bash scripts does something like the following in order to re-display the prompt after a background script completes. If I don&#8217;t do this, I inevitably end up staring at the terminal, wondering what&#8217;s taking so long when the script finished three minutes ago.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code># bash function
+{
+    bind '"\e&#91;0n": "\n"'
+    (
+        printf "Running command in background\n"
+        command
+        # <a href="https://unix.stackexchange.com/questions/213799/can-bash-write-to-its-own-input-stream">can-bash-write-to-its-own-input-stream</a>
+        printf '\e&#91;5n'
+    ) &amp; disown;
+} 2&gt;/dev/null</code></pre>
+
+
+
+<p>Unfortunately, this binding is lost when you <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">exec fish</mark>. You will need the following in config.fish. I don&#8217;t think there is any way to create this binding just temporarily.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code>bind \e'&#91;0n' "echo;fish_prompt"</code></pre>
+
+
+
+<h2 class="wp-block-heading">Reusing Bash Functions and Scripts</h2>
+
+
+
+<p>The first step is to write each bash function to a function in its own script by the same name. You can do this with <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">type</mark> or <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">declare -f</mark>. The function and script name should have some extra characters pre-pended or appended because there will be a wrapper with the same name around the script. Every bash script/function will need a fish wrapper. Note that we&#8217;re wrapping both existing scripts and scripts we created from functions.</p>
+
+
+
+<pre class="wp-block-code scroll has-vivid-cyan-blue-color has-text-color"><code>function create_wrapper
+    eval "function $argv&#91;1]; history --merge; exec env last_cmd=\"\$history&#91;1]\" bash -c \". \\\"\$SHELL_PATH/wrappers.sh\\\"; trap ':' SIGINT; do_script \\\"$argv&#91;1]\\\" \$(printf '\"%s\" ' \$argv); eval '$add_hist'; exec env USE_WRAPPER=1 fish\"; end"
+end
+
+for fname in $(ls "$SCRIPTS_PATH")
+    create_wrapper "$fname"
+end</code></pre>
+
+
+
+<p>The <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">SCRIPTS_PATH</mark> is just whatever directory you have placed your scripts in. There will be a few scripts needed to make this work,  so I made a <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">SHELL_PATH</mark>. This creates a fish function for each bash function and uses the trick mentioned at the beginning to invoke the function in bash and then change back to fish. As soon as we switch to bash, we need to create function wrappers there as well. This is the purpose of <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">wrappers.sh</mark>. The reason for this is that this is neither a login shell nor an interactive shell, so none of the functions will yet exist. And recall that the script names for the corresponding functions were intentionally named slightly differently to avoid shadowing the function that the script calls. The difference between the bash wrappers and the fish wrappers is that the bash wrappers only wrap scripts that were generated from functions, whereas the fish wrappers wrap all scripts and functions. Also note that it&#8217;s not sufficient to create a wrapper for only the function you are calling because that function may call other scripts or functions.</p>
+
+
+
+<p>The next command intercepts <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">SIGINT</mark>, and does nothing. The reason for this is that when you hit <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">Ctrl-C</mark> while in bash, it crashes the fish shell. I don&#8217;t understand why this happens, but this fixes the problem. Then we call a function which runs the function or script. This function needs to be passed the name of the function/script to run as well as all the arguments. Finally, we replace the bash shell with fish and pass an environment variable, <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">USE_WRAPPER</mark>, indicating that the shell was called from a wrapper function. I discovered the need for this flag when my environment variables kept getting over-written. Unlike bash, fish always runs the init script, <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">config.fish</mark>. My init script sets up all my environment variables, and they were getting clobbered each time the wrapper was run. Some scripts modify environment variables; that may be their entire purpose. So resetting them is definitely not the desired behavior.</p>
+
+
+
+<p>The wrappers for bash follows. Note that it excludes scripts since we only need wrappers for functions. Functions-as-scripts are sourced so that they behave like functions with respect to setting environment variables. The bash version of the wrapper also intercepts <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">SIGINT</mark>. I believe the reason for this was that hitting <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">Ctrl-C</mark> was causing the interrupted script to drop into the bash shell instead of fish.</p>
+
+
+
+<pre class="wp-block-code scroll has-vivid-cyan-blue-color has-text-color"><code># wrappers.sh
+function create_wrapper { eval "function ${1} { trap ':' SIGINT; run_script \"${1}\" "\$@"; }; export -f ${1}"; }
+
+function do_script {
+    local script="$1"
+    shift
+    if &#91;&#91; "$script" =~ ".sh" ]]; then
+        "${SCRIPTS_PATH}/${script}" "$@"
+    else
+        . "${SCRIPTS_PATH}/${script}" "$@"
+    fi
+}
+
+for fname in $(ls "$SCRIPTS_PATH" -I '*.sh'); do
+    create_wrapper "$fname"
+done
+
+export -f do_script
+unset -f create_wrapper</code></pre>
+
+
+
+<p>Fish prints a greeting. We don&#8217;t want to see this every time we run a bash function or script. The following needs to go somewhere in the init file.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code>function fish_greeting; end</code></pre>
+
+
+
+<p>There is still one step left. Since there is now a script shadowing every function, you will still need to source the wrapper script from <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">.bashrc</mark> for functions to work properly when using bash. And you will occasionally need to work in bash to fix scripts.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code>. "$SHELL_PATH"/wrappers.sh</code></pre>
+
+
+
+<h2 class="wp-block-heading">Common Environment Variables and Aliases</h2>
+
+
+
+<p>Even though fish and bash have incompatible syntax, it is possible to source a single, common script into either environment as long as you limit the script to using only syntax common to both fish and bash. This is helpful for defining environment variables and aliases in your init files. By defining a function for <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">setenv</mark> and <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">alias</mark> in bash, you can make it have the same syntax as fish. Put the following in <mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">.bashrc</mark>.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code><mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color"># bashrc
+function setenv { export "$1=$2"; }
+function _alias { unalias alias; alias "$1=$2"; alias alias=_alias; }
+alias alias=_alias
+
+# source bash_env</mark> if USE_WRAPPER is not set
+. env<mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">
+
+unalias alias
+unset -f _alias -f setenv</mark></code></pre>
+
+
+
+<p>Then add the script or scripts with environment variables and aliases. I believe newer versions of fish have syntactic sugar for making some of this bash syntax work in fish.</p>
+
+
+
+<pre class="wp-block-code"><code><mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color"># env; can source a script with these
+setenv SCRIPTS_PATH "/home/user/scripts"
+alias cp            "cp -i -p"</mark></code></pre>
+
+
+
+<h2 class="wp-block-heading">Setting Paths from Bash</h2>
+
+
+
+<p>There is still one last problem, well one that I know how to fix. You can&#8217;t use the <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">exec fish</mark> trick in your <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-vivid-cyan-blue-color">config.fish</mark>. I don&#8217;t understand why, but it breaks the X11 login. Logging in from terminal works just fine. What you can do instead is use the universal environment variable mechanism. Run a bash script that sources all the paths you want. Then run a fish shell that permanently sets all the paths in fish. This was tricky to get right. I had some path variables that were getting changed in bash and then were used to modify the path. When calling fish from bash, the bash path gets imported into fish, but I was having issues with paths being reordered and/or duplicated. I finally settled on the following.</p>
+
+
+
+<pre class="wp-block-code scroll"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">if status --is-login
+    if not string match -r -q 'universal' "$(set --show fish_user_paths)"
+        set -Ux fish_pager_color_selected_background --background=</mark><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-ast-global-color-1-color">'#990000'</mark><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-vivid-cyan-blue-color">
+        set -Ux fish_pager_color_background --background='#000040'
+        bash -c ". /opt/rh/additional-software/enable; exec fish -c 'set -U fish_user_paths \$PATH; set -Ux ANOTHERPATH \$ANOTHERPATH;'"
+    end
+    # This needs to happen after setting fish_user_paths to PATH in bash above.
+    # Otherwise, if SOME_OTHER_PATH is in fish_user_paths, path will not be
+    # correct after modifying PATH in a bash script.
+    set -g PATH "$SOME_OTHER_PATH" $PATH
+end</mark></code></pre>
+
+
+
+<p>You probably noticed I changed the pager color. This is because the default background color is the same color as the terminal.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/293/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>District Court Too Lazy to Send Out Important Notices</title>
+		<link>/archives/311</link>
+					<comments>/archives/311#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Mon, 09 Jan 2023 22:06:45 +0000</pubDate>
+				<category><![CDATA[Government is Lazy]]></category>
+		<guid isPermaLink="false">/?p=311</guid>
+
+					<description><![CDATA[If you&#8217;ve ever dealt with governments, either as an ordinary citizen or working for a government is some capacity, you probably know governments tend to place a value of zero on your time and routinely fail to communicate timely or at all. So I recently filed for Summary Ejectment in District Court against my tenant &#8230;<p class="read-more"> <a class="" href="/archives/311"> <span class="screen-reader-text">District Court Too Lazy to Send Out Important Notices</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<p>If you&#8217;ve ever dealt with governments, either as an ordinary citizen or working for a government is some capacity, you probably know governments tend to place a value of zero on your time and routinely fail to communicate timely or at all. So I recently filed for Summary Ejectment in District Court against my tenant who had fallen months behind on rent. I took off work the morning of the trial to prepare and to try again to contact the tenant&#8217;s aide program. As luck would have it, I finally got through to someone in the aide program after a couple months of being ignored, and they informed me they intended to pay the back rent if I sent some additional paperwork. Fantastic! I really did not want to go to court.</p>
+
+
+
+<p>After sending in the paperwork, I spent the next hour trying to get the District Court on the phone. Then I continued to call them throughout the day. No response. I also tried emailing, though it wasn&#8217;t easy to find email addresses. The court website said there were no closures due to weather. I finally found out that night that the governor had given state employees the day off sometime during the week. The court rescheduled all the trials for that day but didn&#8217;t bother to tell anyone. There wasn&#8217;t even recorded message when you dialed in stating that the court was closed. Nothing. I took off of work for this. My tenant may have taken off of work too, and she already isn&#8217;t paying her bills. But I guess it&#8217;s too much of a hassle for the court to call people and let them know of new, critical information.</p>
+
+
+
+<p>When the court reopened, I called them to let them know I wanted to dismiss the case. You can&#8217;t do this over the phone. They told me I had to either send them some paperwork or call the day of the trial and send a court room message to dismiss. Well, I was out of town now, so I decided I would call the day of. I got up early since they rescheduled for the morning. And when I called in, they told me something different, that there is no need to do anything. If you&#8217;re the plaintiff, and you want to dismiss, just don&#8217;t show up. Wonderful. If I had know that a week earlier, I could have simply done nothing and saved about five hours.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/311/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Diminished Value</title>
+		<link>/archives/305</link>
+					<comments>/archives/305#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Mon, 12 Dec 2022 19:35:32 +0000</pubDate>
+				<category><![CDATA[Insurance Companies Behaving Badly]]></category>
+		<guid isPermaLink="false">/?p=305</guid>
+
+					<description><![CDATA[I was rear ended a few weeks ago. My insurance company told me I could either go through them and the insurance company of the driver-at-fault would pay them, or I could go through the other insurance company (Geico). The process by which your insurance company collects a debt owed on your behalf is known &#8230;<p class="read-more"> <a class="" href="/archives/305"> <span class="screen-reader-text">Diminished Value</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<p>I was rear ended a few weeks ago. My insurance company told me I could either go through them and the insurance company of the driver-at-fault would pay them, or I could go through the other insurance company (Geico). The process by which your insurance company collects a debt owed on your behalf is known as <a href="https://en.wikipedia.org/wiki/Subrogation">subrogation</a>. I chose to go through my own insurer because I thought it would be easier. In rectrospect, it may have been easier to go through Geico. My insurance didn&#8217;t cover the full cost of a rental, at least when the other driver is at fault. And I was told that going through your own insurance can raise your rates, though this didn&#8217;t happen.</p>
+
+
+
+<p>A few days after I filed a claim with my insurer, I was contacted by Geico asking me for information about the accident. This was probably due to the other driver filing a claim. I didn&#8217;t understand at the time, but Geico had basically initiated their own claims process for me. So now there were two claims for the same accident: one through my insurer and one through Geico. The damage estimate by the auto-body shop that works with my company was about $2000. Geico had done their own estimate, which was done by me taking photos of the damage and sending them the photos. Their estimate was about $800. The reason for the discrepancy was because Geico&#8217;s estimate only accounted for replacement of the bumper cover, and not the entire bumper. I should mention that the entire right side of the bumper was destroyed, and the backup camera was not working. The final cost to replace the bumper was about $2500, more than three times Geico&#8217;s estimate. There was also the issue of the rental vehicle which Geico had authorized for two days instead of the week the auto-body shop needed.</p>
+
+
+
+<p>Once Geico&#8217;s estimate was complete, I immediately started receiving texts and emails telling me I needed to accept the $800. I was pretty upset at this point. I contacted the <a href="https://insurance.maryland.gov/Pages/default.aspx">Maryland Insurance Administration</a>. After going back and forth with both insurance companies, the auto-body shop, and the MIA, I finally realized that there were two separate claims processes. According to what I was told by the MIA, Geico&#8217;s initial estimate would be revised once the car was in the shop. The shop would have to send a supplemental damages form to Geico to cover the remainder, and this is all part of the process. Why Geico wanted to send me a check still doesn&#8217;t make any sense to me. I would think they should deal with the auto shop directly. By this time, Geico had already mailed me a check, which I never accepted. Since I was going through my own insurance company anyway, I told them to cancel the check.</p>
+
+
+
+<p>While this was going on I had left Geico a message telling them I wanted them to cover diminished value. Maryland is a diminished value state, meaning that insurance is required to pay for the loss of value to your vehicle. When you go to sell your car, the dealer will get a report from the VIN number that will have any accidents listed. Accidents, even if the car has been fully repaired, will make your car worth less. Insurance companies don&#8217;t tell you this of course. You have to know to ask.</p>
+
+
+
+<p>I didn&#8217;t actually care about diminished value. I wanted my car fixed without having to fight over it. I was trying to use diminished value as tool to make the insurance company behave. Someone left me a voicemail about it. After my vehicle was repaired, I called back and left a voicemail. It wouldn&#8217;t hurt to look into it. Due to the crazy car market right now, my car&#8217;s value was estimated at around $10000 even though it&#8217;s 9 years old. I figured the accident probably knocked off something like $1000 in value. Sure enough, they got back to me with the following:</p>
+
+
+
+<blockquote class="wp-block-quote">
+<p>In reviewing a diminished value claim, we consider a number of factors and review each claim based on its own individual merits. The damage in this accident was minor and non-structural in nature, which should have been repaired back to pre-accident condition.<br><br>Based on the factors outlined above, and lack of supporting documents to show a diminished value, we are not moving forward with the claim at this time. We expect that this will satisfy the requested information, however if you have any additional questions, feel free to contact our team directly.</p>
+</blockquote>
+
+
+
+<p>Essentially what they are saying is, you will have to sue us to get diminished value. Damages of $2500, which would be more than half the value of my vehicle in a normal car market, are not minor. I strongly suspect that they send this letter or one very similar to everyone or nearly everyone regardless of circumstances. The cost to get an appraisal is several hundred dollars. Once you throw in court costs, it&#8217;s unlikely I would get very much, and I could even end up with a loss. The only way it would make sense to purse this would be if I had a relatively new luxury vehicle. They know that, and that&#8217;s why they put the onus on me to sue them.</p>
+
+
+
+<p>I walked away from this accident without a scratch. My vehicle was repaired, though the lack of communication put me through some grief. In this case, I decided it&#8217;s best to let it go. Even though I briefly considered selling my car, it would really be too much of a pain to find another one.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/305/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Notes on Linux Layout Customization</title>
+		<link>/archives/291</link>
+					<comments>/archives/291#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Mon, 10 Oct 2022 16:14:36 +0000</pubDate>
+				<category><![CDATA[Completely Irrelevant]]></category>
+		<guid isPermaLink="false">/?p=291</guid>
+
+					<description><![CDATA[These are some additional KDE customizations that you can set before first login. I figured out how to change these settings by making changes through the GUI and studying the configuration files. Newer versions of KDE may not use the same configurations. If you do this before first login, you will need to create the &#8230;<p class="read-more"> <a class="" href="/archives/291"> <span class="screen-reader-text">Notes on Linux Layout Customization</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<p>These are some additional KDE customizations that you can set before first login. I figured out how to change these settings by making changes through the GUI and studying the configuration files. Newer versions of KDE may not use the same configurations. If you do this before first login, you will need to create the directories and files.</p>
+
+
+
+<p>The autostart script runs when you login. You can start multiple Konsole tabs with each one running a different program. Note you might want to use &#8216;sh&#8217; instead, which probably points to your login shell.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code># write to ~/.kde/Autostart/konsole.sh
+if ! pidof konsole > /dev/null; then
+    konsole --workdir ~/ --new-tab -e bash -c "some_command; exec bash" &amp;
+    sleep .2
+    konsole --workdir ~/ --new-tab -e bash -c "another_command; exec bash" &amp;
+fi</code></pre>
+
+
+
+<p>The default font was giving me some trouble. Sometimes the cursor would appear under the wrong character. I changed to this mono space font, and the problem went away.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code># write to ~/.kde/share/apps/konsole/Shell.profile
+&#91;Appearance]
+Font=Liberation Mono,10,-1,5,50,0,0,0,0,0
+
+&#91;General]
+Name=Shell
+Parent=FALLBACK/</code></pre>
+
+
+
+<p>Open Konsole maximized.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code># append to ~/.kde/share/config/kwinrc
+&#91;Windows]
+Placement=Maximizing</code></pre>
+
+
+
+<p>I don&#8217;t recall exactly why I needed this. I believe KDE attempts to be smart about remembering applications that were running when you shutdown so that it can automatically reopen them. But I don&#8217;t want it to reopen anything. I just want Konsole to open as above.</p>
+
+
+
+<p></p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code># append to ~/.kde/share/config/ksmserverrc
+&#91;General]
+confirmLogout=true
+excludeApps=
+loginMode=default
+offerShutdown=true
+shutdownType=0</code></pre>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/291/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Linux Keyboard Layout Customization</title>
+		<link>/archives/257</link>
+					<comments>/archives/257#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Mon, 23 May 2022 01:31:20 +0000</pubDate>
+				<category><![CDATA[Completely Irrelevant]]></category>
+		<guid isPermaLink="false">/?p=257</guid>
+
+					<description><![CDATA[Setting the keyboard layout on Linux/X11 has always been a bit of a mystery to me. To make matters worse, I&#8217;m using Vagrant to frequently spin up a new VM; the extra step of system restart or log out so that changes can take effect is very unwelcome. When troubleshooting initialization and configuration issues, it&#8217;s &#8230;<p class="read-more"> <a class="" href="/archives/257"> <span class="screen-reader-text">Linux Keyboard Layout Customization</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<p>Setting the keyboard layout on Linux/X11 has always been a bit of a mystery to me. To make matters worse, I&#8217;m using Vagrant to frequently spin up a new VM; the extra step of system restart or log out so that changes can take effect is very unwelcome.</p>
+
+
+
+<p>When troubleshooting initialization and configuration issues, it&#8217;s helpful to know what kind of shell you are in. A login shell normally only runs once at login and executes .bash_profile. An interactive shell will usually run every time you open a system console and executes .bashrc. The &#8216;i&#8217; in the &#8216;-&#8216; variable indicates an interactive shell.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">> echo $-
+himBH
+
+> shopt login_shell
+login_shell     off</mark></code></pre>
+
+
+
+<p>You can set the keyboard layout globally by setting the system locale. The only problem with this is that it doesn&#8217;t take effect until the next login. Normally this wouldn&#8217;t be a problem, but if you are frequently starting with a new VM, logging out just to fix the keyboard layout is annoying.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">> localectl set-x11-keymap us,us "" dvorak,</mark></code></pre>
+
+
+
+<p>Since I&#8217;m using a VM and the host machine is already password protected, there is really no reason to require logging in at all. My KDE install is using GDM by default.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">> grep 'ExecStart=' /etc/systemd/system/display-manager.service
+ExecStart=/usr/sbin/gdm</mark></code></pre>
+
+
+
+<p>You can modify /etc/gdm/custom.conf to log in automatically. Unfortunately, this does not take effect until the next boot, so I added it to my base Vagrant box. It may also be possible to <a href="https://unix.stackexchange.com/questions/425256/catch-all-command-to-restart-display-manager">restart the display manager</a>.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">&#91;daemon] 
+AutomaticLoginEnable=True 
+AutomaticLogin=username</mark></code></pre>
+
+
+
+<p>This was causing some problems with my KDE autostart script, but it&#8217;s easy enough to <a href="https://stackoverflow.com/questions/72232994/gdm-autologin-repeats-autostart">fix</a>. However, I had similar problems with KDE configurations (e.g. kwinrc) that I changed not taking effect immediately when Vagrant first boots the system. You can fix this by looking to see if any new scripts have been added to the Autostart directory in the past few minutes and then restarting the KDE session. If you are modifying .bash_profile or .bashrc at first boot, you may still have a problem with these files running before your changes are made. The fix mentioned above should also fix this issue. Alternatively, if you are only modifying .bashrc, you could just sleep for a bit before starting any interactive shell. You could modify the configuration files in the base box; the only problem is that KDE doesn&#8217;t create the directories and files until your first login.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">if &#91; ! -z  "$(find ~/.kde/Autostart -mtime -.002)" ]; then
+    kwin --replace >&amp; /dev/null &amp;
+fi</mark></code></pre>
+
+
+
+<p>Using auto-login obviates the problem of the login screen still using the old keyboard layout, but once you are logged in, the keyboard layout is still the old one. You can also set the keyboard layout for only the current X11 session, which takes effect immediately.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">> setxkbmap dvorak
+> setxkbmap -query
+rules:      evdev
+model:      evdev
+layout:     dvorak</mark></code></pre>
+
+
+
+<p>It probably won&#8217;t hurt to run this every time, but there is no need on subsequent logins. First, notice that once set-x11-keymap takes effect, the variant field of a setxkbmap query has been set.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">> more /etc/X11/xorg.conf.d/00-keyboard.conf
+# Read and parsed by systemd-localed. It's probably wise not to edit this file
+# manually too freely.
+Section "InputClass"
+        Identifier "system-keyboard"
+        MatchIsKeyboard "on"
+        Option "XkbLayout" "us,us"
+        Option "XkbVariant" "dvorak,"
+EndSection
+
+> setxkbmap -query
+rules:      evdev
+model:      evdev
+layout:     us,us
+variant:    dvorak,</mark></code></pre>
+
+
+
+<p>So we can add the following to .bash_profile or .bashrc, and it will only run before set-x11-keymap takes effect.</p>
+
+
+
+<pre class="wp-block-code"><code><mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-pale-cyan-blue-color">if &#91;&#91; ! $(setxkbmap -query) =~ variant:&#91;&#91;:space:]]*dvorak ]]; then
+    setxkbmap dvorak
+fi</mark></code></pre>
+
+
+
+<p>There is still a problem though. If you ssh in, you don&#8217;t want to change the keyboard layout because you will already be using the altered keyboard layout of the host. The xhost command will return false if it can&#8217;t connect to an X11 display.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">> xhost  # from GUI
+access control enabled, only authorized clients can connect
+SI:localuser:root
+SI:localuser:myuser
+
+> xhost  # from ssh
+xhost:  unable to open display ""</mark></code></pre>
+
+
+
+<p>So, with this extra condition, we now only run setxkbmap before setx-x11-keymap takes effect and if we are in the GUI.</p>
+
+
+
+<pre class="wp-block-code"><code><mark style="background-color:rgba(0, 0, 0, 0)" class="has-inline-color has-pale-cyan-blue-color">if xhost >&amp; /dev/null &amp;&amp; &#91;&#91; ! <mark data-darkreader-inline-bgcolor="" style="background-color: rgba(0, 0, 0, 0); --darkreader-inline-bgcolor:rgba(13, 13, 13, 0);" class="has-inline-color has-pale-cyan-blue-color">$(setxkbmap -query) =~ variant:&#91;&#91;:space:]]*dvorak</mark> ]]; then
+    setxkbmap dvorak
+fi</mark></code></pre>
+
+
+
+<p>Another possibility is to run setxkbmap in the auto-start script only the first time the auto-start script runs.</p>
+
+
+
+<p class="has-vivid-red-color has-text-color has-medium-font-size">Update</p>
+
+
+
+<p>There is an easier way to deal with the problem of setting the keyboard layout and KDE configuration files on first boot. If you have created a base box using Vagrant, simply leave the run level as the default. This is multi-user.target on CentOS with Systemd. Upon booting with X11, make any changes to the KDE configuration files, change to auto-login if you haven&#8217;t already, set the locale, and then change the run-level to graphical.target.</p>
+
+
+
+<pre class="wp-block-code has-vivid-cyan-blue-color has-text-color"><code>systemctl isolate graphical.target
+systemctl set-default graphical.target</code></pre>
+
+
+
+<p>The first line changes to the graphical run-level immediately. The second makes it permanent.</p>
+
+
+
+<p>There&#8217;s no longer any need to also change the keyboard layout using setxkbmap on the first login. And if you do it this way, you won&#8217;t run into any race conditions between updating configuration files and KDE loading those same configuration files.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/257/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>Letter to State Representatives</title>
+		<link>/archives/252</link>
+					<comments>/archives/252#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Tue, 10 May 2022 23:42:43 +0000</pubDate>
+				<category><![CDATA[States Behaving Badly]]></category>
+		<guid isPermaLink="false">/?p=252</guid>
+
+					<description><![CDATA[I sent the letter below to my state representatives after receiving a number of incorrect violation notices and a requirement that I file a California state tax return in the next few days. If I were feeling cynical, I would say that states benefit from making so many errors, which they struggle to fix. But, &#8230;<p class="read-more"> <a class="" href="/archives/252"> <span class="screen-reader-text">Letter to State Representatives</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<p>I sent the letter below to my state representatives after receiving a number of incorrect violation notices and a requirement that I file a California state tax return in the next few days. If I were feeling cynical, I would say that states benefit from making so many errors, which they struggle to fix. But, I think  a large part of the problem is that people don&#8217;t complain to their elected officials often enough. That&#8217;s why the motto of this blog is &#8220;complain, complain, complain.&#8221;</p>
+
+
+
+<hr class="wp-block-separator"/>
+
+
+
+<p>Some simple, non-partisan suggestions to change the law so that you receive less irate phone calls from citizens.</p>
+
+
+
+<p>A couple of times each year, I receive notices threatening to take action if I don&#8217;t immediately comply with some law. These notices are usually due to clerical errors. Once data has been incorrectly entered into an IT system, it can be extremely difficult to get the error fixed. These issues cut across state and local governments. Maryland can be a model for the rest of the country by making a few simple changes.</p>
+
+
+
+<p><strong>(1) Require, by law, that government employees make a serious attempt to contact you by phone and email when an issue arises, and document that they did so.</strong>&nbsp;The web is 40 years old. Nearly everyone has a smartphone and an email address. A simple text message could clear up an issue before it metastasizes into a major problem. The following are issues I&#8217;ve dealt with over the years.</p>
+
+
+
+<p>The Maryland Department of the Environment incorrectly entered my registration data into a database because they had trouble reading my handwriting. As a result, I received a violation notice. I was initially told it was just a mistake. It was only months later I learned, by accident, that they had recorded the incorrect information. There is an entire body of law and a large amount of resources to make both public and private buildings, as well as phone and web interfaces, handicap accessible. My issue could have been prevented for the cost of an email, that is for 15 seconds of someone&#8217;s time.</p>
+
+
+
+<p>The Maryland MVA lost my insurance information and cancelled my vehicle registration. They notified me by mail nearly a week after my registration was cancelled. When I tried to contact them, they were not answering the phones. Again, a phone call could have prevented this. There was no need to take any other action.</p>
+
+
+
+<p>The North Carolina Employment Security Commission somehow created multiple accounts for me with incorrect social security numbers. I don&#8217;t know how it happened, but it is a reasonable guess that they could not read some handwritten form. Every several days for months, I received a letter threating to take money out of my account due to overpayment. This is money I did not receive on an account that wasn&#8217;t mine. Because they had outsourced the process to private industry, it took months to get the problem fixed. Again, if someone had contacted me, this might have been prevented.</p>
+
+
+
+<p>I lost my job and moved to Maryland. North Carolina continued to send letters to my former address demanding I file a state tax return. After five years, they went into my private checking account and took a substantial sum that I did not owe. In five years, North Carolina did not attempt to call or email me, not even one time. In this particular case, I think it is fair to say this went beyond negligence, and borders on the criminal.</p>
+
+
+
+<p>Howard County did not like some of the information I provided on a rental property registration form. Instead of emailing me, they mailed the form back to me, delaying the process and requiring me to fill out the form again.</p>
+
+
+
+<p>I challenged the value of my property which Wake County valued at about 6% more than what I paid for it. They mailed the notice of the court date to the wrong address. I didn&#8217;t learn of the error until being notified that I had lost for failing to show up.</p>
+
+
+
+<p>North Carolina cashed my check but lost my tax return. This time they had the correct Maryland address, but they should have attempted to call me.</p>
+
+
+
+<p><strong>(2) Provide for adequate response times.</strong>&nbsp;I routinely get notices from the HOA and the county demanding I take action, usually within 30 days, or face heavy fines. The action I&#8217;m required to take can sometimes involve thousands of dollars. By the time I open the letter, the 30 days notice is more like three weeks. And by the time I can get someone on the phone or a response to email, it&#8217;s more like two weeks. Except for health and safety issues, there is no reason to require short response times. Ninety days minimum should be required by law.</p>
+
+
+
+<p>The state of California sent me a notice demanding I file a state tax return. Except, because I neither live nor work in California, they didn&#8217;t have my address. So they sent the notice to my former employer. My former employer eventually forward the notice to me. By the time I got the notice and was able to get someone on the phone to find out what this was about, I had only a few days to respond &#8212; just a few days for filing a tax return.</p>
+
+
+
+<p>I sent Howard County payment for property taxes three weeks in advance. The check was either delayed in the mail, or more likely the county was behind on processing payments. I had to go to the county council to get the problem fixed.</p>
+
+
+
+<p>Important rental renewal information was delayed in the mail, or more likely Howard County was delayed in processing the information, and I received another notice of violation. It took a few dozen emails and phone calls to get to the bottom of the problem only to learn that there was no problem.</p>
+
+
+
+<p>My tenant&#8217;s voucher program notified me by mail that they had changed the date of the inspection. I received the notice after the inspection was performed.</p>
+
+
+
+<p>I have already mentioned that the MVA notified me of the adverse action they took only AFTER they took action.</p>
+
+
+
+<p>HOAs frequently demand compliance within three to four weeks of a notice of violation. Compliance often means thousands of dollars in cosmetic repairs. HOAs almost never enforce these timelines; nevertheless, there is no reason the duration can&#8217;t be at least 90 days.</p>
+
+
+
+<p><strong>(3) Provide photographic evidence.</strong>&nbsp;Sometimes HOAs and the county send photos after an inspection, and sometimes they don&#8217;t. A decent smartphone with a camera costs only a couple hundred dollars. There is no excuse for not providing photos.</p>
+
+
+
+<p>Most recently, I received a violation notice from Howard County for rotten trim and overgrown weeds. I repeatedly asked for photos. After a number of phone calls, I eventually figured out that the enforcement officer was looking at the wrong house! Had I been sent photos, the problem would have been immediately obvious and would have saved us both a lot of time.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/252/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+		<item>
+		<title>California Demands Tax Return</title>
+		<link>/archives/249</link>
+					<comments>/archives/249#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Mon, 02 May 2022 16:26:44 +0000</pubDate>
+				<category><![CDATA[States Behaving Badly]]></category>
+		<guid isPermaLink="false">/?p=249</guid>
+
+					<description><![CDATA[I received a letter from California telling me to file a state return for 2018 in the next two weeks. Well that&#8217;s very interesting since I&#8217;ve never lived or worked in California. I haven&#8217;t received a request to file a return in Indiana, a state I did once live and work in. I haven&#8217;t received &#8230;<p class="read-more"> <a class="" href="/archives/249"> <span class="screen-reader-text">California Demands Tax Return</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[
+<p>I received a letter from California telling me to file a state return for 2018 in the next two weeks. Well that&#8217;s very interesting since I&#8217;ve never lived or worked in California. I haven&#8217;t received a request to file a return in Indiana, a state I did once live and work in. I haven&#8217;t received a request to file a return for New York or Ohio or any other state. Next year will I need to file a return with all 50 states?</p>
+
+
+
+<p>As I write this, I&#8217;m on hold with the California Franchise Tax Board. The wait time is more than three hours.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/249/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+	</channel>
+</rss>

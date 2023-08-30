@@ -1,0 +1,77 @@
+# wsl --import  rocky C:\Users\myuser\Desktop\ C:\Users\myuser\Desktop\Rocky-9-Container-Base-9.1-20230215.0.x86_64.tar.xz --version 2
+# wsl -d rocky -u root
+# dnf install -y sudo procps systemd NetworkManager iputils openssh-server chrony man man-pages ansible-core
+# ansible-playbook /mnt/c/dev/wsl/playbook-wsl.yml -e "firstboot="
+# wsl --shutdown   or   wsl --terminate rocky
+# ansible-playbook /mnt/c/dev/wsl/playbook-wsl.yml
+# (You can ignore if it gives you mount error the first time you restart)
+# wsl -d rocky -u username
+# ansible-playbook /mnt/c/dev/wsl/playbook-wsl.yml
+
+- hosts: localhost
+  become: true
+
+  vars:
+    hostname:       'rocky'
+    ip:             '192.168.2.6'
+    gateway:        '192.168.2.1'
+    username:       'myuser'
+    wsl_win_path:   'C:\dev\wsl'
+    wsl_linux_path: '{{playbook_dir}}'
+    dev_path:       '{{wsl_win_path | win_dirname}}'
+
+  tasks:
+
+    - name: Copy /etc templates
+      when: firstboot is defined
+      template:
+        src: '{{wsl_linux_path}}/{{item}}.j2'
+        dest: '/etc/{{item}}'
+      loop: ['fstab','wsl.conf']
+
+    - name: Update host
+      when: firstboot is defined
+      block:
+        - lineinfile:
+            path: '/etc/hosts'
+            regexp: '{{item.old_ip}}\s+.*'
+            line: "{{item.new_ip}}\t{{hostname}}"
+            backrefs: yes
+          loop:
+            - {old_ip: '127.0.0.1', new_ip: '127.0.0.1'}
+            - {old_ip: '127.0.1.1', new_ip: '{{ip}}'}
+
+    - name: 'Create user {{username}} with root privileges'
+      when: firstboot is defined
+      block:
+        - user:
+            name: '{{username}}'
+            password: '{{username | password_hash("sha512")}}'
+        - copy:
+            content: '{{username}} ALL=(ALL) NOPASSWD:ALL'
+            dest: '/etc/sudoers.d/{{username}}'
+
+    - name: Add network configuration script
+      when: firstboot is defined
+      vars:
+        update_ip: 'update-ip.sh'
+      block:
+        - lineinfile:
+            path: '/usr/lib/systemd/system/NetworkManager.service'
+            insertafter: '^\[Service\]'
+            line: 'ExecStartPost=/home/{{username}}/{{update_ip}}'
+        - template:
+            src: '{{wsl_linux_path}}/{{update_ip}}.j2'
+            dest: '/home/{{username}}/{{update_ip}}'
+            mode: 0755
+
+    - name: Enable network services and update hostname
+      when: firstboot is undefined
+      block:
+        - service:
+            name: '{{item}}'
+            enabled: true
+          loop: ['NetworkManager','sshd','chronyd']
+        - hostname:
+            name: '{{hostname}}'
+            use: systemd

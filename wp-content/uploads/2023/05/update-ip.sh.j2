@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+nmcli con mod "eth0" ipv4.addresses "{{ip}}/24" ipv4.gateway "{{gateway}}" ipv4.dns "8.8.8.8 8.8.4.4"
+rm /etc/NetworkManager/system-connections/eth0.nmconnection

@@ -1,0 +1,20 @@
+[automount]
+enabled = true
+root = /mnt
+options = "metadata"
+mountFsTab = true
+
+[network]
+generateResolvConf = false
+generateHosts = false
+hostname = {{hostname}}
+
+[interop]
+appendWindowsPath = true
+
+[user]
+default = {{username}}
+
+[boot]
+systemd = true
+

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>Undisclosed Fees &#8211; Pushing Back</title>
+	<atom:link href="/archives/category/undisclosed-fees/feed" rel="self" type="application/rss+xml" />
+	<link>/</link>
+	<description></description>
+	<lastBuildDate>Tue, 15 May 2012 22:15:08 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.3.1</generator>
+	<item>
+		<title>Hidden Fees</title>
+		<link>/archives/135</link>
+					<comments>/archives/135#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Tue, 17 Apr 2012 01:16:50 +0000</pubDate>
+				<category><![CDATA[Banks Behaving Badly]]></category>
+		<category><![CDATA[Undisclosed Fees]]></category>
+		<guid isPermaLink="false">/?p=135</guid>
+
+					<description><![CDATA[It was time to move my old 401K into a rollover IRA. I had limited choices and control over my 401k contributions. Why my employer chose ADP, I have no idea. I opened a Fidelity rollover IRA account into which I intended to transfer my 401K. I chose Fidelity because my current employer uses them &#8230;<p class="read-more"> <a class="" href="/archives/135"> <span class="screen-reader-text">Hidden Fees</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[<p>It was time to move my old 401K into a rollover IRA.  I had limited choices and control over my 401k contributions.  Why my employer chose ADP, I have no idea.  I opened a Fidelity rollover IRA account into which I intended to transfer my 401K.  I chose Fidelity because my current employer uses them for our 401k and other accounts.</p>
+<p>I was told IRAs that I opened myself could by automatically transferred by Fidelity from the other brokerage.  Whether my stocks will be sold first or not I don&#8217;t know, as I haven&#8217;t gone through the process yet.  But in the case of 401Ks opened by an employer, both Fidelity, and a discount broker I use, told me the stocks would have to be sold, and a check would be mailed.  Why the extra complexity?  I suppose it could be due to some law or technical issue.  But in the absence of any knowledge of how the process works, I have to be a cynic and assume they just want to make it as hard as possible for you to get your money back &#8212; often a safe assumption.  And on top of this, ADP would not talk to me directly.  To move my 401K, I had to go through my previous employer.  If my last employer, no longer existed, I would have had to call a government agency.  They really wanted to make it as hard as possible.</p>
+<p>The one day I happened to choose to sell my index fund, the market tanked (a little).  In the weeks following, while I waited for the check to arrive at Fidelity, the market shot up.  This translates into a few thousand dollars lost immediately for a few percent over several years worth of 401K contributions.  To add insult to injury, the amount of the check was approximately $50 less than what had been sitting in my account.  It took some time to figure out when and where the $50 disappeared.  It certainly wasn&#8217;t well advertised.  I eventually figured out that it was probably some fee associated with taking money out of my account.  I searched through the agreement with ADP &#8212; something my company agreed to of course, not me.  One brief paragraph mentioned simply that there were fees, but there was no description of the fees or when they were applied.</p>
+<p>I ultimately took a gamble and waited for a market correction.  I ended up losing perhaps no more than a thousand off my 401K.  Crappy, yet better than a few thousand.</p>
+<p>My real frustration is that law contributes to financial institutions&#8217; incentives to nickel and dime you with fees.  There are a million special purpose accounts &#8212; many of them worth only small amounts of money in any given year: HSA, FSA, 401K, IRA, Roth 401K, Roth IRA, pension plans, etc.  Each new account creates an abundant number of complex ways to be charged $25 here and $100 dollars there, all on relatively small amounts of money.  To opt out is to pay a higher tax rate.  And of course, with each new account, they want to make it as hard as humanly possible for you to get your money back out, and usually it&#8217;ll cost you.</p>
+<p><strong>Update</strong></p>
+<p>I moved my Zecco IRA into my Fidelity IRA account.  It appears that transaction cost $70 in addition to the $30 yearly fee.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/135/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+	</channel>
+</rss>

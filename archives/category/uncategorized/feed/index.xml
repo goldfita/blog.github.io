@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>Uncategorized &#8211; Pushing Back</title>
+	<atom:link href="/archives/category/uncategorized/feed" rel="self" type="application/rss+xml" />
+	<link>/</link>
+	<description></description>
+	<lastBuildDate>Sat, 19 Mar 2011 23:20:57 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.3.1</generator>
+	<item>
+		<title>Sweating the Small Stuff</title>
+		<link>/archives/43</link>
+					<comments>/archives/43#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Sat, 19 Mar 2011 23:20:57 +0000</pubDate>
+				<category><![CDATA[Uncategorized]]></category>
+		<guid isPermaLink="false">/?p=43</guid>
+
+					<description><![CDATA[So why bother worrying about a few hundred dollars here and there? It&#8217;s a lot of work to fight with an organization, especially a large one that&#8217;s not particularly reputable. And in the end, there is a good chance you&#8217;ll get nothing for your work. If you spend 40 hours trying to recoup $200, you&#8217;re &#8230;<p class="read-more"> <a class="" href="/archives/43"> <span class="screen-reader-text">Sweating the Small Stuff</span> Read More &#187;</a></p>]]></description>
+										<content:encoded><![CDATA[<p>So why bother worrying about a few hundred dollars here and there?  It&#8217;s a lot of work to fight with an organization, especially a large one that&#8217;s not particularly reputable.  And in the end, there is a good chance you&#8217;ll get nothing for your work.  If you spend 40 hours trying to recoup $200, you&#8217;re making less than minimum wage.</p>
+<p>The most important reason to fight back is to make the leaders of the organization think twice before creating a culture of ripping off the customer.  If the customer is apathetic, there is nothing to stop a company from taking its customers&#8217; money from now until the end of time.  And the people who work there understand well that there is not a lot of incentive for the customers to fight (read lawsuit) over relatively small amounts of money.  On the other side of the equation there is a lot of incentive to steal a little here and a little there.  If you have a lot customers, the volume can quickly add up to millions.</p>
+<p>Another reason, though, is that small amounts of money do add up over time.  Suppose you pass on an opportunity to recover $1000 per year for 50 years.  This isn&#8217;t really unreasonable.  It&#8217;s probably not far off from what I&#8217;ve lost in the past few years either due to incompetence, mistakes, or outright fraud.  Assuming 8% interest in the stock market after inflation, the present value of that money is about $13,000.  The accumulated value 50 years from now is well over $600,000.  That&#8217;s three Harvard educations!  How do you feel about that $1000/year now?</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/43/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+	</channel>
+</rss>

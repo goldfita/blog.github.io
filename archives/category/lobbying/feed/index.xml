@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>Lobbying &#8211; Pushing Back</title>
+	<atom:link href="/archives/category/lobbying/feed" rel="self" type="application/rss+xml" />
+	<link>/</link>
+	<description></description>
+	<lastBuildDate>Thu, 12 May 2011 03:00:00 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.3.1</generator>
+	<item>
+		<title>Veto H.129</title>
+		<link>/archives/58</link>
+					<comments>/archives/58#respond</comments>
+		
+		<dc:creator><![CDATA[Todd]]></dc:creator>
+		<pubDate>Thu, 12 May 2011 03:00:00 +0000</pubDate>
+				<category><![CDATA[Lobbying]]></category>
+		<guid isPermaLink="false">/?p=58</guid>
+
+					<description><![CDATA[If this web page loaded a little slow, or you&#8217;re just tired of overpaying for mediocre internet access, consider contacting Governor Purdue and asking her to veto H.129.  More info here.]]></description>
+										<content:encoded><![CDATA[<p>If this web page loaded a little slow, or you&#8217;re just tired of overpaying for mediocre internet access, consider contacting Governor Purdue and asking her to <a href="http://stopthecap.com/2011/05/05/national-call-to-action-insist-that-north-carolina-gov-bev-purdue-veto-h-129/?utm_source=twitter&amp;utm_medium=social&amp;utm_campaign=National+Call+to+Action%3A+Insist+That+North+Carolina+Gov.+Bev+Purdue+Veto+H.129">veto H.129</a>.  More info <a href="http://www.muninetworks.org/content/time-warner-cable-monopoly-protection-act-heads-north-carolina-governor">here</a>.</p>
+]]></content:encoded>
+					
+					<wfw:commentRss>/archives/58/feed</wfw:commentRss>
+			<slash:comments>0</slash:comments>
+		
+		
+			</item>
+	</channel>
+</rss>
